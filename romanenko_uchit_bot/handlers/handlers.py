@@ -16,13 +16,23 @@ from romanenko_uchit_bot.static.callbacks import (
     LEADER_BOARD,
     MAIL,
     GETTING_GUIDE,
+    FREE_LESSON,
 )
+from romanenko_uchit_bot.static.keys import GROUP_MESSAGE, USERNAME, FIRST_MSG
+
 
 from romanenko_uchit_bot.database.db import DB_PATH
 
 from romanenko_uchit_bot.tools.escape_text import escape_text
 
-from romanenko_uchit_bot.jobs.jobs import way_to_it_job, ONCE_WAY_IT_JOB
+from romanenko_uchit_bot.jobs.jobs import (
+    way_to_it_job,
+    group_msg_job,
+    free_lesson_job,
+    ONCE_WAY_IT_JOB,
+    GROUP_MSG,
+    FREE_LSN,
+)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -53,6 +63,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ADMIN_COMMANDS
 
     else:
+        context.user_data[GROUP_MESSAGE] = {
+            FIRST_MSG: update.effective_message.id,
+        }
+
         """ Register User """
 
         async with aiosqlite.connect(DB_PATH) as db:
@@ -128,9 +142,31 @@ async def user_progrev_callback(
             parse_mode=ParseMode.MARKDOWN_V2,
         )
 
-    return PROGREV_MESSAGES
+        context.job_queue.run_once(
+            group_msg_job,
+            10,
+            chat_id=user_id,
+            name=f"{user_id}-{GROUP_MSG}",
+            data={
+                GROUP_MESSAGE: {
+                    FIRST_MSG: context.user_data[GROUP_MESSAGE][FIRST_MSG],
+                    USERNAME: update.effective_user.name
+                    if "@" in update.effective_user.name
+                    else None,
+                }
+            },
+        )  # 60 * 30
 
-    """send job and next step"""
+        context.job_queue.run_once(
+            free_lesson_job, 15, chat_id=user_id, name=f"{user_id}-{FREE_LSN}"
+        )
+    elif int(query.data) == FREE_LESSON:
+        await context.bot.send_message(
+            chat_id=user_id,
+            text="Поделитесь контактом",
+        )
+
+    return PROGREV_MESSAGES
 
 
 async def admin_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
