@@ -9,9 +9,14 @@ from telegram import (
 import aiosqlite
 
 from romanenko_uchit_bot.static.ids import ADMINS
-from romanenko_uchit_bot.static.conversions import CONV_REGISTERED
+from romanenko_uchit_bot.static.conversions import CONV_REGISTERED, CONV_GUIDE
 from romanenko_uchit_bot.static.states import PROGREV_MESSAGES, ADMIN_COMMANDS
-from romanenko_uchit_bot.static.callbacks import CONVERSIONS, LEADER_BOARD, MAIL
+from romanenko_uchit_bot.static.callbacks import (
+    CONVERSIONS,
+    LEADER_BOARD,
+    MAIL,
+    GETTING_GUIDE,
+)
 
 from romanenko_uchit_bot.database.db import DB_PATH
 
@@ -91,3 +96,36 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # await context.bot.forwardMessage(
         #     chat_id=GROUP_ID, from_chat_id=update.effective_chat.id, message_id=message
         # )
+
+
+async def user_progrev_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> int:
+    query = update.callback_query
+    await query.answer()
+
+    user_id = update.effective_chat.id
+
+    await context.bot.delete_message(
+        chat_id=user_id,
+        message_id=update.effective_message.message_id,
+    )
+
+    if int(query.data) == GETTING_GUIDE:
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute(
+                """
+                    UPDATE users
+                    SET status = ?
+                    WHERE id = ?
+                """,
+                (CONV_GUIDE, user_id),
+            )
+
+            await db.commit()
+
+        await context.bot.send_message(
+            chat_id=user_id,
+            text=escape_text("*Гайд*"),
+            parse_mode=ParseMode.MARKDOWN_V2,
+        )

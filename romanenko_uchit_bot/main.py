@@ -3,16 +3,27 @@ from dotenv import load_dotenv
 import os
 import asyncio
 
+from warnings import filterwarnings
+from telegram.warnings import PTBUserWarning
+
 from telegram.ext import (
     Application,
     CommandHandler,
     ConversationHandler,
+    CallbackQueryHandler,
 )
 
 from romanenko_uchit_bot.database.db import init_db
-from romanenko_uchit_bot.handlers.handlers import start
+
+from romanenko_uchit_bot.handlers.handlers import start, user_progrev_callback
+
+from romanenko_uchit_bot.static.states import PROGREV_MESSAGES, ADMIN_COMMANDS
+
 
 load_dotenv()
+filterwarnings(
+    action="ignore", message=r".*CallbackQueryHandler", category=PTBUserWarning
+)
 
 
 def main():
@@ -22,7 +33,14 @@ def main():
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
-        states={},
+        states={
+            PROGREV_MESSAGES: [
+                CallbackQueryHandler(user_progrev_callback),
+            ],
+            ADMIN_COMMANDS: [
+                CallbackQueryHandler(user_progrev_callback),
+            ],
+        },
         fallbacks=[],
     )
 
