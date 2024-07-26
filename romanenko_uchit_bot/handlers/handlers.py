@@ -33,11 +33,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         keyboard = [
             [
-                InlineKeyboardButton("Conversions", callback_data=CONVERSIONS),
-                InlineKeyboardButton("List of Users", callback_data=LEADER_BOARD),
+                InlineKeyboardButton("Конверсии", callback_data=CONVERSIONS),
+                InlineKeyboardButton(
+                    "Список Пользователей", callback_data=LEADER_BOARD
+                ),
             ],
             [
-                InlineKeyboardButton("Send everyone", callback_data=MAIL),
+                InlineKeyboardButton("Отправить рассылку", callback_data=MAIL),
             ],
         ]
 
@@ -55,14 +57,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         async with aiosqlite.connect(DB_PATH) as db:
             async with db.execute(
-                "SELECT name FROM users WHERE id = ?", (user_id,)
+                "SELECT name FROM users WHERE id_tg = ?", (user_id,)
             ) as cursor:
                 row = await cursor.fetchone()
-                if row:
-                    """ Already Registered """
-                    print("Вы уже зарегистрированы")
-
-                else:
+                if not row:
                     await db.execute(
                         """
                         INSERT INTO users (id_tg, status, name) 
@@ -117,7 +115,7 @@ async def user_progrev_callback(
                 """
                     UPDATE users
                     SET status = ?
-                    WHERE id = ?
+                    WHERE id_tg = ?
                 """,
                 (CONV_GUIDE, user_id),
             )
@@ -129,3 +127,50 @@ async def user_progrev_callback(
             text=escape_text("*Гайд*"),
             parse_mode=ParseMode.MARKDOWN_V2,
         )
+
+    return PROGREV_MESSAGES
+
+    """send job and next step"""
+
+
+async def admin_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+
+    user_id = update.effective_chat.id
+
+    await context.bot.delete_message(
+        chat_id=user_id,
+        message_id=update.effective_message.message_id,
+    )
+
+    if int(query.data) == LEADER_BOARD:
+        async with aiosqlite.connect(DB_PATH) as db:
+            async with db.execute(
+                "SELECT id, id_tg, status, name, phone FROM users"
+            ) as cursor:
+                rows = await cursor.fetchall()
+                messages = "\n".join(
+                    [
+                        f"{row[0]}: {row[1]} - {row[2]} - {row[3]} - {row[4]}"
+                        for row in rows
+                    ]
+                )
+
+        if len(messages) != 0:
+            await context.bot.send_message(
+                chat_id=user_id,
+                text="id: tg_id - status - name - phone",
+            )
+
+            await context.bot.send_message(
+                chat_id=user_id,
+                text=messages,
+            )
+        else:
+            await context.bot.send_message(
+                chat_id=user_id,
+                text="- no users -",
+            )
+
+    return await start(update, context)
