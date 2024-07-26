@@ -1,7 +1,7 @@
 import logging
 from telegram.ext import ApplicationBuilder, CommandHandler
 from dotenv import load_dotenv
-from handlers.handlers import start
+from handlers.handlers import start  # type: ignore
 import os
 
 logging.basicConfig(
@@ -13,6 +13,7 @@ load_dotenv()
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
+
 
 def main():
     application = ApplicationBuilder().token(os.getenv("TOKEN")).build()
