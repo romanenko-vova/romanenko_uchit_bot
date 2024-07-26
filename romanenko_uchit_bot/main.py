@@ -1,27 +1,38 @@
-import logging
-from telegram.ext import ApplicationBuilder, CommandHandler
 from dotenv import load_dotenv
-from handlers.handlers import start  # type: ignore
-import os
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+import os
+import asyncio
+
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    ConversationHandler,
 )
+
+from romanenko_uchit_bot.database.db import init_db
+from romanenko_uchit_bot.handlers.handlers import start
 
 load_dotenv()
 
-logging.getLogger("httpx").setLevel(logging.WARNING)
-
-logger = logging.getLogger(__name__)
-
 
 def main():
-    application = ApplicationBuilder().token(os.getenv("TOKEN")).build()
+    print("MAIN")
 
-    application.add_handler(CommandHandler("start", start))
+    application = Application.builder().token(os.getenv("TOKEN")).build()
+
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("start", start)],
+        states={},
+        fallbacks=[],
+    )
+
+    application.add_handler(conv_handler)
 
     application.run_polling()
 
 
 if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(init_db())
+
     main()
