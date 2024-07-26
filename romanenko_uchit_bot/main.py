@@ -14,12 +14,10 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
-
 def main():
     application = ApplicationBuilder().token(os.getenv("TOKEN")).build()
 
-    start_handler = CommandHandler("start", start)
-    application.add_handler(start_handler)
+    application.add_handler(CommandHandler("start", start))
 
     application.run_polling()
 
