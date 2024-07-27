@@ -1,0 +1,10 @@
+(
+    GETTING_GUIDE,
+    CONVERSIONS,
+    LEADER_BOARD,
+    MAIL,
+    FREE_LESSON,
+    GET_MAIL,
+    YES_MAIL,
+    NO_MAIL,
+) = range(8)
