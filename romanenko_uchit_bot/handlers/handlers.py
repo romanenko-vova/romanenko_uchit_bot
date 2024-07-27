@@ -33,14 +33,19 @@ from romanenko_uchit_bot.static.callbacks import (
     YES_MAIL,
     NO_MAIL,
 )
-from romanenko_uchit_bot.static.keys import GROUP_MESSAGE, USERNAME, FIRST_MSG
+from romanenko_uchit_bot.static.keys import (
+    GROUP_MESSAGE,
+    USERNAME,
+    FIRST_MSG,
+    MESSAGE_MAIL,
+)
 from romanenko_uchit_bot.static.time import (
     WAY_TO_IT_TIME,
     GROUP_MSG_TIME,
     FREE_LESSON_TIME,
 )
 
-from romanenko_uchit_bot.database.db import DB_PATH
+from romanenko_uchit_bot.database.db import DB_PATH, get_conversions
 
 from romanenko_uchit_bot.tools.escape_text import escape_text
 
@@ -289,6 +294,7 @@ async def admin_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             )
 
         return await start(update, context)
+
     elif int(query.data) == MAIL:
         await context.bot.send_message(
             chat_id=user_id,
@@ -303,6 +309,29 @@ async def admin_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     elif int(query.data) == NO_MAIL:
         return await start(update, context)
 
+    elif int(query.data) == CONVERSIONS:
+        states_list = [
+            "Зарегистрировались",
+            "Получили гайд",
+            "Перешли к отправке контактов",
+            "Поделились контактами",
+        ]
+
+        number_users = await get_conversions()
+        message = f"{states_list[0]}"
+
+        for i in range(len(states_list) - 1):
+            conversion = round(number_users[i + 1] / number_users[i] * 100, 2)
+
+            message += f"\n|\n|    {conversion}%\nv\n{states_list[i+1]}"
+
+        await context.bot.send_message(
+            chat_id=user_id,
+            text=message,
+        )
+
+        return await start(update, context)
+
 
 async def get_mail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     msg = update.effective_message.text
@@ -314,7 +343,7 @@ async def get_mail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         ]
     ]
 
-    context.user_data["msg"] = msg
+    context.user_data[MESSAGE_MAIL] = msg
 
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -327,7 +356,7 @@ async def get_mail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 async def send_mail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    msg = context.user_data.get("msg", "no message found")
+    msg = context.user_data.get(MESSAGE_MAIL, "no message found")
 
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute("SELECT id_tg FROM users") as cursor:
