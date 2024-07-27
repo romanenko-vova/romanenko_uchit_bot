@@ -102,11 +102,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                 await db.commit()
 
-        with open("romanenko_uchit_bot/img/me.jpeg", "rb") as f:
+        with open("romanenko_uchit_bot/img/me.JPG", "rb") as f:
             await context.bot.send_photo(
                 chat_id=user_id,
                 photo=f,
-                caption=escape_text("Кто я?\n\n*- Владимир Романенко*"),
+                caption=escape_text(
+                    "*Я могу помочь вашему ребенку стать программистом*"
+                ),
                 parse_mode=ParseMode.MARKDOWN_V2,
             )
 
