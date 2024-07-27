@@ -66,3 +66,14 @@ async def group_msg_job(context: ContextTypes.DEFAULT_TYPE) -> int:
             from_chat_id=job.chat_id,
             message_id=context.job.data[GROUP_MESSAGE][FIRST_MSG],
         )
+
+
+def remove_job_if_exists(name: str, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    current_jobs = context.job_queue.get_jobs_by_name(name)
+
+    if not current_jobs:
+        return False
+    for job in current_jobs:
+        job.schedule_removal()
+
+    return True

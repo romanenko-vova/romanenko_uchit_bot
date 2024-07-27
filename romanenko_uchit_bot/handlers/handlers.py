@@ -4,13 +4,21 @@ from telegram import (
     Update,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+    ReplyKeyboardRemove,
 )
 
 import aiosqlite
 
-from romanenko_uchit_bot.static.ids import ADMINS
-from romanenko_uchit_bot.static.conversions import CONV_REGISTERED, CONV_GUIDE
-from romanenko_uchit_bot.static.states import PROGREV_MESSAGES, ADMIN_COMMANDS
+from romanenko_uchit_bot.static.ids import ADMINS, GROUP_ID
+from romanenko_uchit_bot.static.conversions import (
+    CONV_REGISTERED,
+    CONV_GUIDE,
+    CONV_PHONE,
+    CONV_HELPER,
+)
+from romanenko_uchit_bot.static.states import PROGREV_MESSAGES, ADMIN_COMMANDS, PHONE
 from romanenko_uchit_bot.static.callbacks import (
     CONVERSIONS,
     LEADER_BOARD,
@@ -19,7 +27,11 @@ from romanenko_uchit_bot.static.callbacks import (
     FREE_LESSON,
 )
 from romanenko_uchit_bot.static.keys import GROUP_MESSAGE, USERNAME, FIRST_MSG
-
+from romanenko_uchit_bot.static.time import (
+    WAY_TO_IT_TIME,
+    GROUP_MSG_TIME,
+    FREE_LESSON_TIME,
+)
 
 from romanenko_uchit_bot.database.db import DB_PATH
 
@@ -29,6 +41,7 @@ from romanenko_uchit_bot.jobs.jobs import (
     way_to_it_job,
     group_msg_job,
     free_lesson_job,
+    remove_job_if_exists,
     ONCE_WAY_IT_JOB,
     GROUP_MSG,
     FREE_LSN,
@@ -63,12 +76,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ADMIN_COMMANDS
 
     else:
+        """ save if user don't have username """
         context.user_data[GROUP_MESSAGE] = {
             FIRST_MSG: update.effective_message.id,
         }
 
         """ Register User """
-
         async with aiosqlite.connect(DB_PATH) as db:
             async with db.execute(
                 "SELECT name FROM users WHERE id_tg = ?", (user_id,)
@@ -98,16 +111,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
         context.job_queue.run_once(
-            way_to_it_job, 15, chat_id=user_id, name=f"{user_id}-{ONCE_WAY_IT_JOB}"
+            way_to_it_job,
+            WAY_TO_IT_TIME,
+            chat_id=user_id,
+            name=f"{user_id}-{ONCE_WAY_IT_JOB}",
         )
 
         return PROGREV_MESSAGES
-
-        """ SEND TO GROUP """
-        # message = update.effective_message.id
-        # await context.bot.forwardMessage(
-        #     chat_id=GROUP_ID, from_chat_id=update.effective_chat.id, message_id=message
-        # )
 
 
 async def user_progrev_callback(
@@ -144,7 +154,7 @@ async def user_progrev_callback(
 
         context.job_queue.run_once(
             group_msg_job,
-            10,
+            GROUP_MSG_TIME,
             chat_id=user_id,
             name=f"{user_id}-{GROUP_MSG}",
             data={
@@ -155,18 +165,77 @@ async def user_progrev_callback(
                     else None,
                 }
             },
-        )  # 60 * 30
+        )
+
+        """ request in 30 min to the lesson"""
 
         context.job_queue.run_once(
-            free_lesson_job, 15, chat_id=user_id, name=f"{user_id}-{FREE_LSN}"
-        )
-    elif int(query.data) == FREE_LESSON:
-        await context.bot.send_message(
+            free_lesson_job,
+            FREE_LESSON_TIME,
             chat_id=user_id,
-            text="Поделитесь контактом",
+            name=f"{user_id}-{FREE_LSN}",
         )
 
-    return PROGREV_MESSAGES
+        return PROGREV_MESSAGES
+
+    elif int(query.data) == FREE_LESSON:
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute(
+                """
+                    UPDATE users
+                    SET status = ?
+                    WHERE id_tg = ?
+                """,
+                (CONV_PHONE, user_id),
+            )
+
+            await db.commit()
+
+        keyboard = [[KeyboardButton("Отправить контакт", request_contact=True)]]
+
+        await context.bot.send_message(
+            chat_id=user_id,
+            text="Поделитесь контактом и с Вами свяжется моя помощница",
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard, one_time_keyboard=True, resize_keyboard=True
+            ),
+        )
+
+        return PHONE
+
+
+async def save_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    phone_number = update.message.contact.phone_number
+    user_id = update.effective_user.id
+
+    await context.bot.send_message(
+        chat_id=user_id,
+        text="Спасибо\n\nПока ожидаете можете подписаться на мой телеграмм канал\n@romanenko_uchit",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """
+                    UPDATE users
+                    SET status = ?, phone = ?
+                    WHERE id_tg = ?
+                """,
+            (CONV_HELPER, phone_number, user_id),
+        )
+
+        await db.commit()
+
+    """ send to the group """
+    await context.bot.send_message(
+        chat_id=GROUP_ID,
+        text=update.effective_user.name,
+    )
+
+    """ kill group job  """
+    remove_job_if_exists(name=f"{user_id}-{GROUP_MSG}", context=context)
+
+    """TODO next step"""
 
 
 async def admin_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -181,6 +250,7 @@ async def admin_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     )
 
     if int(query.data) == LEADER_BOARD:
+        """send all users"""
         async with aiosqlite.connect(DB_PATH) as db:
             async with db.execute(
                 "SELECT id, id_tg, status, name, phone FROM users"

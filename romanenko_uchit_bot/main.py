@@ -11,6 +11,8 @@ from telegram.ext import (
     CommandHandler,
     ConversationHandler,
     CallbackQueryHandler,
+    MessageHandler,
+    filters,
 )
 
 from romanenko_uchit_bot.database.db import init_db
@@ -19,9 +21,10 @@ from romanenko_uchit_bot.handlers.handlers import (
     start,
     user_progrev_callback,
     admin_callbacks,
+    save_phone,
 )
 
-from romanenko_uchit_bot.static.states import PROGREV_MESSAGES, ADMIN_COMMANDS
+from romanenko_uchit_bot.static.states import PROGREV_MESSAGES, ADMIN_COMMANDS, PHONE
 
 
 load_dotenv()
@@ -44,6 +47,7 @@ def main():
             ADMIN_COMMANDS: [
                 CallbackQueryHandler(admin_callbacks),
             ],
+            PHONE: [MessageHandler(filters.CONTACT, save_phone)],
         },
         fallbacks=[],
     )
