@@ -22,9 +22,15 @@ from romanenko_uchit_bot.handlers.handlers import (
     user_progrev_callback,
     admin_callbacks,
     save_phone,
+    get_mail,
 )
 
-from romanenko_uchit_bot.static.states import PROGREV_MESSAGES, ADMIN_COMMANDS, PHONE
+from romanenko_uchit_bot.static.states import (
+    PROGREV_MESSAGES,
+    ADMIN_COMMANDS,
+    PHONE,
+    GET_MAIL,
+)
 
 
 load_dotenv()
@@ -47,6 +53,7 @@ def main():
             ADMIN_COMMANDS: [
                 CallbackQueryHandler(admin_callbacks),
             ],
+            GET_MAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_mail)],
             PHONE: [MessageHandler(filters.CONTACT, save_phone)],
         },
         fallbacks=[],

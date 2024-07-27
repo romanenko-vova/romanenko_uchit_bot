@@ -18,13 +18,20 @@ from romanenko_uchit_bot.static.conversions import (
     CONV_PHONE,
     CONV_HELPER,
 )
-from romanenko_uchit_bot.static.states import PROGREV_MESSAGES, ADMIN_COMMANDS, PHONE
+from romanenko_uchit_bot.static.states import (
+    PROGREV_MESSAGES,
+    ADMIN_COMMANDS,
+    PHONE,
+    GET_MAIL,
+)
 from romanenko_uchit_bot.static.callbacks import (
     CONVERSIONS,
     LEADER_BOARD,
     MAIL,
     GETTING_GUIDE,
     FREE_LESSON,
+    YES_MAIL,
+    NO_MAIL,
 )
 from romanenko_uchit_bot.static.keys import GROUP_MESSAGE, USERNAME, FIRST_MSG
 from romanenko_uchit_bot.static.time import (
@@ -281,4 +288,52 @@ async def admin_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 text="- no users -",
             )
 
-    return await start(update, context)
+        return await start(update, context)
+    elif int(query.data) == MAIL:
+        await context.bot.send_message(
+            chat_id=user_id,
+            text="Отправь мне сообщение, которое увидят все пользователи",
+        )
+        return GET_MAIL
+    elif int(query.data) == YES_MAIL:
+        await send_mail(query, context)
+
+        return await start(update, context)
+
+    elif int(query.data) == NO_MAIL:
+        return await start(update, context)
+
+
+async def get_mail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    msg = update.effective_message.text
+
+    keyboard = [
+        [
+            InlineKeyboardButton("Да", callback_data=YES_MAIL),
+            InlineKeyboardButton("Нет", callback_data=NO_MAIL),
+        ]
+    ]
+
+    context.user_data["msg"] = msg
+
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=escape_text(f"Отправить это?\n\n{msg}"),
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode=ParseMode.MARKDOWN_V2,
+    )
+
+    return ADMIN_COMMANDS
+
+
+async def send_mail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    msg = context.user_data.get("msg", "no message found")
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("SELECT id_tg FROM users") as cursor:
+            async for row in cursor:
+                await context.bot.send_message(
+                    chat_id=row[0],
+                    text=escape_text(msg),
+                    parse_mode=ParseMode.MARKDOWN_V2,
+                )
