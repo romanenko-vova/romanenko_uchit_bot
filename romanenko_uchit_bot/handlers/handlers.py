@@ -11,7 +11,7 @@ from telegram import (
 
 import aiosqlite
 
-from romanenko_uchit_bot.static.ids import ADMINS, GROUP_ID
+from romanenko_uchit_bot.static.ids import ADMINS, GROUP_ID, CHANNEL_ID
 from romanenko_uchit_bot.static.conversions import (
     CONV_REGISTERED,
     CONV_GUIDE,
@@ -23,6 +23,7 @@ from romanenko_uchit_bot.static.states import (
     ADMIN_COMMANDS,
     PHONE,
     GET_MAIL,
+    CHECK_SUBSRIBED,
 )
 from romanenko_uchit_bot.static.callbacks import (
     CONVERSIONS,
@@ -44,6 +45,7 @@ from romanenko_uchit_bot.static.time import (
     GROUP_MSG_TIME,
     FREE_LESSON_TIME,
 )
+from romanenko_uchit_bot.static.strings import SEND_CONTACT_GROUP
 
 from romanenko_uchit_bot.database.db import DB_PATH, get_conversions
 
@@ -148,6 +150,25 @@ async def user_progrev_callback(
     )
 
     if int(query.data) == GETTING_GUIDE:
+        """check if subsribed"""
+        is_subs = await is_subscribed(
+            context=context, chat_id=CHANNEL_ID, user_id=user_id
+        )
+        if not is_subs:
+            keyboard = [
+                [
+                    InlineKeyboardButton("Получить Гайд", callback_data=GETTING_GUIDE),
+                ],
+            ]
+
+            await context.bot.send_message(
+                chat_id=user_id,
+                text="Подпишитесь на мой телеграмм канал перед получением гайда:\n@romanenko_uchit",
+                reply_markup=InlineKeyboardMarkup(keyboard),
+            )
+
+            return CHECK_SUBSRIBED
+
         async with aiosqlite.connect(DB_PATH) as db:
             await db.execute(
                 """
@@ -162,10 +183,10 @@ async def user_progrev_callback(
 
         await context.bot.send_message(
             chat_id=user_id,
-            text=escape_text("*Гайд*"),
-            parse_mode=ParseMode.MARKDOWN_V2,
+            text="https://romanenkouchit.notion.site/51287ed9579b405da2640f30dd4669cb?pvs=4",
         )
 
+        """get guide so send message to moderator"""
         context.job_queue.run_once(
             group_msg_job,
             GROUP_MSG_TIME,
@@ -224,7 +245,7 @@ async def save_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     await context.bot.send_message(
         chat_id=user_id,
-        text="Спасибо\n\nПока ожидаете можете подписаться на мой телеграмм канал\n@romanenko_uchit",
+        text="Спасибо\n\Пожалуйста, ожидайте!",
         reply_markup=ReplyKeyboardRemove(),
     )
 
@@ -241,6 +262,11 @@ async def save_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         await db.commit()
 
     """ send to the group """
+    await context.bot.send_message(
+        chat_id=GROUP_ID,
+        text=SEND_CONTACT_GROUP,
+    )
+
     await context.bot.send_message(
         chat_id=GROUP_ID,
         text=update.effective_user.name,
@@ -366,3 +392,13 @@ async def send_mail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     text=escape_text(msg),
                     parse_mode=ParseMode.MARKDOWN_V2,
                 )
+
+
+async def is_subscribed(context, chat_id, user_id):
+    try:
+        user = await context.bot.get_chat_member(chat_id=chat_id, user_id=user_id)
+        print(user)
+        return False
+    except Exception as e:
+        print(e)
+        return False
