@@ -3,6 +3,7 @@ from telegram.ext import (
 )
 
 from romanenko_uchit_bot.static.ids import GROUP_ID
+from romanenko_uchit_bot.static.strings import GUIDE_GROUP
 
 from telegram import (
     InlineKeyboardButton,
@@ -48,6 +49,11 @@ async def free_lesson_job(context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 async def group_msg_job(context: ContextTypes.DEFAULT_TYPE) -> int:
+    await context.bot.send_message(
+        chat_id=GROUP_ID,
+        text=GUIDE_GROUP,
+    )
+
     if (
         GROUP_MESSAGE in context.job.data
         and USERNAME in context.job.data[GROUP_MESSAGE]

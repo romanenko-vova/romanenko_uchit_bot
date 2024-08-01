@@ -30,6 +30,7 @@ from romanenko_uchit_bot.static.states import (
     ADMIN_COMMANDS,
     PHONE,
     GET_MAIL,
+    CHECK_SUBSRIBED,
 )
 
 
@@ -48,6 +49,9 @@ def main():
         entry_points=[CommandHandler("start", start)],
         states={
             PROGREV_MESSAGES: [
+                CallbackQueryHandler(user_progrev_callback),
+            ],
+            CHECK_SUBSRIBED: [
                 CallbackQueryHandler(user_progrev_callback),
             ],
             ADMIN_COMMANDS: [
