@@ -151,9 +151,13 @@ async def user_progrev_callback(
 
     if int(query.data) == GETTING_GUIDE:
         """check if subsribed"""
+
         is_subs = await is_subscribed(
-            context=context, chat_id=CHANNEL_ID, user_id=user_id
+            context=context,
+            channel_id=CHANNEL_ID,
+            user_id=update.callback_query.from_user.id,
         )
+
         if not is_subs:
             keyboard = [
                 [
@@ -245,7 +249,7 @@ async def save_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     await context.bot.send_message(
         chat_id=user_id,
-        text="Спасибо\n\Пожалуйста, ожидайте!",
+        text="Спасибо\nПожалуйста, ожидайте!",
         reply_markup=ReplyKeyboardRemove(),
     )
 
@@ -394,11 +398,14 @@ async def send_mail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 )
 
 
-async def is_subscribed(context, chat_id, user_id):
+async def is_subscribed(context, channel_id, user_id) -> bool:
     try:
-        user = await context.bot.get_chat_member(chat_id=chat_id, user_id=user_id)
-        print(user)
-        return False
-    except Exception as e:
-        print(e)
+        member = await context.bot.get_chat_member(chat_id=channel_id, user_id=user_id)
+
+        if member.status in ["member", "administrator", "creator"]:
+            return True
+        else:
+            return False
+
+    except Exception:
         return False

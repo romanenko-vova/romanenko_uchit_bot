@@ -5,4 +5,4 @@ ADMINS = [
 
 GROUP_ID = -4270539079
 
-CHANNEL_ID = -1549196503
+CHANNEL_ID = "@romanenko_uchit"
