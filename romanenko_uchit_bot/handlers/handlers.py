@@ -271,15 +271,26 @@ async def save_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         text=SEND_CONTACT_GROUP,
     )
 
-    await context.bot.send_message(
-        chat_id=GROUP_ID,
-        text=update.effective_user.name,
-    )
+    # await context.bot.send_message(
+    #     chat_id=GROUP_ID,
+    #     text=update.effective_user.name,
+    # )
+
+    if "@" in update.effective_user.name:
+        await context.bot.send_message(
+            chat_id=GROUP_ID,
+            text=update.effective_user.name,
+        )
+
+    else:
+        await context.bot.forwardMessage(
+            chat_id=GROUP_ID,
+            from_chat_id=update.effective_chat.id,
+            message_id=context.user_data[GROUP_MESSAGE][FIRST_MSG],
+        )
 
     """ kill group job  """
     remove_job_if_exists(name=f"{user_id}-{GROUP_MSG}", context=context)
-
-    """TODO next step"""
 
 
 async def admin_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
