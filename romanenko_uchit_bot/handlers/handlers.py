@@ -45,7 +45,13 @@ from romanenko_uchit_bot.static.time import (
     GROUP_MSG_TIME,
     FREE_LESSON_TIME,
 )
-from romanenko_uchit_bot.static.strings import SEND_CONTACT_GROUP
+from romanenko_uchit_bot.static.strings import (
+    SEND_CONTACT_GROUP,
+    HELLO_MESSAGE,
+    GUIDE_MESSAGE,
+    GET_CONTACT_MESSAGE,
+    THANKS_FOR_CONTACT_MESSAGE,
+)
 
 from romanenko_uchit_bot.database.db import DB_PATH, get_conversions
 
@@ -120,9 +126,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_photo(
                 chat_id=user_id,
                 photo=f,
-                caption=escape_text(
-                    "*Я могу помочь вашему ребенку стать программистом*"
-                ),
+                caption=escape_text(HELLO_MESSAGE),
                 parse_mode=ParseMode.MARKDOWN_V2,
             )
 
@@ -187,7 +191,8 @@ async def user_progrev_callback(
 
         await context.bot.send_message(
             chat_id=user_id,
-            text="https://romanenkouchit.notion.site/51287ed9579b405da2640f30dd4669cb?pvs=4",
+            text=escape_text(GUIDE_MESSAGE),
+            parse_mode=ParseMode.MARKDOWN_V2,
         )
 
         """get guide so send message to moderator"""
@@ -234,7 +239,8 @@ async def user_progrev_callback(
 
         await context.bot.send_message(
             chat_id=user_id,
-            text="Поделитесь контактом и с Вами свяжется моя помощница",
+            text=escape_text(GET_CONTACT_MESSAGE),
+            parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=ReplyKeyboardMarkup(
                 keyboard, one_time_keyboard=True, resize_keyboard=True
             ),
@@ -249,7 +255,8 @@ async def save_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     await context.bot.send_message(
         chat_id=user_id,
-        text="Спасибо\nПожалуйста, ожидайте!",
+        text=escape_text(THANKS_FOR_CONTACT_MESSAGE),
+        parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=ReplyKeyboardRemove(),
     )
 

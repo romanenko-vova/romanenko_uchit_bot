@@ -2,13 +2,17 @@ from telegram.ext import (
     ContextTypes,
 )
 
+from telegram.constants import ParseMode
+
 from romanenko_uchit_bot.static.ids import GROUP_ID
-from romanenko_uchit_bot.static.strings import GUIDE_GROUP
+from romanenko_uchit_bot.static.strings import GUIDE_GROUP, FREE_LESSON_MESAGE
 
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
 )
+
+from romanenko_uchit_bot.tools.escape_text import escape_text
 
 from romanenko_uchit_bot.static.callbacks import GETTING_GUIDE, FREE_LESSON
 from romanenko_uchit_bot.static.keys import GROUP_MESSAGE, USERNAME, FIRST_MSG
@@ -43,8 +47,9 @@ async def free_lesson_job(context: ContextTypes.DEFAULT_TYPE) -> int:
 
     await context.bot.send_message(
         chat_id=job.chat_id,
-        text="Заинтересовало?",
+        text=escape_text(FREE_LESSON_MESAGE),
         reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode=ParseMode.MARKDOWN_V2,
     )
 
 
