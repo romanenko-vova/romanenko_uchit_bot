@@ -1,11 +1,6 @@
 def escape_text(text):
     escape_chars = [
         "-",
-        "_",
-        "[",
-        "]",
-        "(",
-        ")",
         "~",
         "`",
         ">",
