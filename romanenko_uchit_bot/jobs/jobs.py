@@ -5,7 +5,7 @@ from telegram.ext import (
 from telegram.constants import ParseMode
 
 from romanenko_uchit_bot.static.ids import GROUP_ID
-from romanenko_uchit_bot.static.strings import GUIDE_GROUP, FREE_LESSON_MESAGE
+from romanenko_uchit_bot.static.strings import GUIDE_GROUP, FREE_LESSON_MESAGE, BEFORE_GUIDE_MESSAGE
 
 from telegram import (
     InlineKeyboardButton,
@@ -28,11 +28,12 @@ async def way_to_it_job(context: ContextTypes.DEFAULT_TYPE) -> int:
             InlineKeyboardButton("Получить Гайд", callback_data=GETTING_GUIDE),
         ],
     ]
-
+    print(escape_text(BEFORE_GUIDE_MESSAGE))
     await context.bot.send_message(
         chat_id=job.chat_id,
-        text="Путь в IT",
+        text=escape_text(BEFORE_GUIDE_MESSAGE),
         reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode=ParseMode.MARKDOWN_V2
     )
 
 

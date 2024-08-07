@@ -24,6 +24,7 @@ from romanenko_uchit_bot.static.states import (
     PHONE,
     GET_MAIL,
     CHECK_SUBSRIBED,
+    
 )
 from romanenko_uchit_bot.static.callbacks import (
     CONVERSIONS,
@@ -51,6 +52,7 @@ from romanenko_uchit_bot.static.strings import (
     GUIDE_MESSAGE,
     GET_CONTACT_MESSAGE,
     THANKS_FOR_CONTACT_MESSAGE,
+    ERROR_CHECK_SUB,
 )
 
 from romanenko_uchit_bot.database.db import DB_PATH, get_conversions
@@ -171,8 +173,9 @@ async def user_progrev_callback(
 
             await context.bot.send_message(
                 chat_id=user_id,
-                text="Подпишитесь на мой телеграмм канал перед получением гайда:\n@romanenko_uchit",
+                text=escape_text(ERROR_CHECK_SUB),
                 reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode=ParseMode.MARKDOWN_V2
             )
 
             return CHECK_SUBSRIBED
@@ -242,7 +245,7 @@ async def user_progrev_callback(
             text=escape_text(GET_CONTACT_MESSAGE),
             parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=ReplyKeyboardMarkup(
-                keyboard, one_time_keyboard=True, resize_keyboard=True
+                keyboard, one_time_keyboard=True, resize_keyboard=True, input_field_placeholder="Нажмите на кнопку снизу ⬇️"
             ),
         )
 
